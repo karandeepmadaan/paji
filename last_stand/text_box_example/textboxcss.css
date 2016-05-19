@@ -1,0 +1,36 @@
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: #000 url(bg-texture.png) repeat;
+  color: #dddddd;
+}
+
+h1, h3 {
+  margin: 0;
+  padding: 0;
+  font-weight: normal;
+}
+
+a {
+  color: #EB067B;
+}
+
+div#container {
+  width: 580px;
+  margin: 100px auto 0 auto;
+  padding: 20px;
+  background: #000;
+  border: 1px solid #1a1a1a;
+}
+
+div#pop-up {
+  display: none;
+  position: absolute;
+  width: 280px;
+  padding: 10px;
+  background: #eeeeee;
+  color: #000000;
+  border: 1px solid #1a1a1a;
+  font-size: 90%;
+}

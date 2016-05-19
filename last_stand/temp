@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.0/jquery.min.js"></script>
+
+        <!-- link stylesheets and inchlib.js with current file-->
+        <link rel="stylesheet" href="css_files/pure-min.css" type="text/css"/>
+        <link rel="stylesheet" href="css_files/inchlib.css" type="text/css"/>
+        <link rel="stylesheet" href="css_files/highlight.css" type="text/css"/>
+        <script src="jquery-2.0.3.min.js"></script> <script src="kinetic-v5.1.0.min.js"></script> <script src="inchlib-1.1.0.js"> </script>
+    
+        <script>
+            var dendrogram = null; // making dendrogram object
+
+            function hide_menu(){
+                $("#dendrogram_filter_features").fadeOut("slow");
+                $("#dendrogram_overlay").fadeOut("slow");
+            }
+
+
+        </script>
+
+        <title>Dendrogram Walmart</title>
+    </head>
+    <body>
+        <!-- image of walmart-->
+        <img src="walmart_logo_1.jpg" alt="walmart_labs" style="padding-left:13cm; width:200px;height:50px;"> <br>
+        <!--Input Box:<input type = "text" id = "textbox_mine" ng-model="sampleText"><br>-->
+        <br>
+        <!--save progress and retrive progress buttons -->
+        <button id = "save" type = "button"  onclick = 'download_csv("0");' >SAVE PROGRESS</button> <br>
+        
+
+        <input id="csv" type="file" onclick = "add()" value = "Upload progress"> <br>
+
+
+    
+        <div id = "new_div" ></div>
+        <div id="content"> 
+
+
+        <script>
+
+            
+            // for uploading file which has been saved 
+            var fileInput = document.getElementById("csv"),
+            //var reader = new FileReader();  
+            readFile = function () {
+            //alert("in");
+            var reader = new FileReader();
+                //alert(reader.result);
+                reader.onload = function () {
+                    //document.getElementById('out').innerHTML = reader.result;
+                    //alert("final" + reader.result);
+                    map_data = reader.result;
+                    //alert(map_data);
+                    refresh_map(reader.result);
+                };
+                // start reading the file. When it is done, calls the onload event defined above.
+                reader.readAsBinaryString(fileInput.files[0]);
+                //alert(reader.result);
+            };
+
+            //function for loading data on button on click
+            function add() {
+                //alert("gya");
+                $(document).ready(function(){
+                    $("#file").removeAttr("onblur");
+                });
+                document.getElementById("csv").blur();
+                this.blur();
+                fileInput.addEventListener('change', readFile);
+            }
+
+
+
+            // a map taken for hashing 
+            var map = new Object();
+
+            // for loading description on product images
+            $(document).ready(function() {
+                //alert("in");
+                $.ajax({
+                    type: "GET",
+                    url: "idname.csv",
+                    dataType: "text",
+                    success: function(data) {processData(data);}
+                });
+
+            });
+
+            // for processing description data
+            function processData(allText) {
+                var record_num = 2;  // or however many elements there are in each row
+                var allTextLines = allText.split(/\r\n|\n/);
+                // split descriptions on basis of comma
+                var entries = allTextLines[100].split(',');
+                var len = allTextLines.length;
+                var lines = [];
+                var i = 1;
+                while(i < len ) {
+                    var entry = allTextLines[i].split(',');
+                    // assign description of data to the iteam id
+                    map[entry[0]] = entry[1];
+                
+                    i = i + 1;
+                }
+                //alert("value " + map['1']);
+                var headings = entries.splice(0,record_num);
+                while (entries.length>0) {
+                    var tarr = [];
+                    for (var j=0; j<record_num; j++) {
+                        tarr.push(headings[j]+":"+entries.shift());
+                    }
+                    lines.push(tarr);
+                }
+        
+            }
+
+
+            // function for loading the data from cluster file json file
+            
+            $(document).ready(function(){
+                
+                var current_mol; 
+                //intialising the dendrogram windows
+                window.dendrogram = new InCHlib({
+                    target: "dendrogram",
+                    metadata: true, 
+                    //dendrogram: true,
+                    max_height: 900,
+                    //heatmap_colors: "GnBu",
+                    metadata_colors: "RdLrBu",
+                    highlight_colors: "PuOr",
+                });
+                //reading json file        
+                dendrogram.read_data_from_file("z_cluster_api_file6.json");
+                dendrogram.draw();
+
+                var molecule_url = "images/"; //image path
+                var target_element = $("#dendrogram"); 
+                var offset = target_element.offset();
+                var max_y = offset.top + 150; //this has the value of image from the top
+                y_axis  = max_y;
+                var x_pos = offset.left + dendrogram.settings.width - 80;
+                x_axis = x_pos;
+                
+                
+                var mol_element = $("#molecule").css({"left": x_pos});
+
+                var img_element = $("#molecule_img");
+
+                //alert("image_element  " + img_element);
+                var mol_id_element = $("#mol_id"); // image name taken by row_id
+                var floating_mol = $("#floating_mol");
+                var floating_mol1 = $("#floating_mol1");
+                
+                // binding dendrogram events to the mouse functionalities
+                bind_dendrogram_events();
+
+ 
+                //function to display the molecule 
+                function show_molecule(mol_id, evt){
+                    // always true
+                    if(1) { 
+                        // file path to display product image on heatmap hovering
+                        var filepath = molecule_url + mol_id + ".jpg"; //path and image name acco to element id
+                        var y = evt.evt.pageY-300; //image placement on z - axis
+                        if(y < max_y){
+                            y = max_y;
+                        }
+                        // css attributes of image
+                        mol_element.css({"top": y, "border-width": "1px"});
+
+                        //defining filepath for a particular image
+                        img_element.attr("src", filepath);
+                        //alert(map[mol_id]);
+                        // getting mol id from the map which has been populated from the description file called idname                
+                        mol_id_element.text(map[mol_id]); // what to be written on molecule
+                        // show image
+                        mol_element.show();
+            
+                    }
+                }
+
+
+
+                // function to hide the image that has been displayed
+                function hide_molecule(ids, evt){
+                    mol_element.hide();
+                
+                }
+
+
+                // binding mouse events with the dendrogram
+                function bind_dendrogram_events() {
+                    dendrogram.events.row_onmouseover = function(ids, evt){
+                        show_molecule(ids, evt);
+                    };
+                    dendrogram.events.heatmap_onmouseout = function(evt){
+                        hide_molecule(evt);
+                        floating_mol.hide();
+                        //floating_mol1.hide();
+                    };
+                    // for holding image on clicking on it
+                    dendrogram.events.row_onclick = function(ids, evt){
+                        show_molecule(ids[0], evt);
+                        fix_molecule(ids[0]);
+                        current_mol = ids[0];
+
+                        dendrogram.highlight_rows(ids);
+
+                        mol_element.css({"border-width": "2px"});
+                        dendrogram.unhighlight_cluster();
+                    };
+
+                    // Heatmap node highlighted on hovering over it
+                    dendrogram.events.dendrogram_node_highlight = function(object_ids, evt){
+                        var i;
+                        dendrogram.highlight_rows([]);
+                    }
+
+                }
+
+
+                $(document).click(function(evt){            
+                    if(evt.target.localName != "img" && evt.target.localName != "canvas" && evt.target.localName != "a"){
+                        hide_molecule();
+                        bind_dendrogram_events();
+                    }
+                });
+
+
+            });
+
+
+
+
+            // It is a part of retriving progress
+            // it is done by browse option
+            ////////////////////////////////////////////////////////////////
+            ////////////////loading data to global display map////////////
+            ///////////////////////////////////////////////////////////////
+           
+ 
+
+            function refresh_map(map_data) {
+
+                var record_num = 11;  // or however many elements there are in each row
+                var allTextLines = map_data.split(/\r\n|\n/);
+                
+                var keys = Object.keys(global_display_map);
+
+                var x = 0;
+              
+                var len = allTextLines.length;
+                //alert("len",len);
+                var lines = [];
+                var i = 0;
+                // parsing data from the file to be put in map to retrive progress
+                while(i < len - 1) {
+                    var entry = allTextLines[i].split(',');
+                    var temp = [];
+                    // pushing data to temp vector
+                    for(var j = 1; j < entry.length - 1; j++) {
+                        temp.push(entry[j]);
+                    }
+                    // generating key by adding dendrogram # in front to key id in file
+                    // example form 90 to dendrogram#90
+                    var new_key = "dendrogram#"+entry[0];
+                    global_display_map[new_key] = temp;
+                    global_color_map[new_key] = entry[entry.length - 1];
+                
+                    dendrogram.dendrogram_layer.get("#"+new_key)[0].stroke(entry[entry.length - 1]);
+                    i = i + 1;
+                }
+                
+                // drawing dendrogram
+                dendrogram.dendrogram_layer.draw();
+                keys = Object.keys(global_display_map);
+            }
+        </script>
+
+
+         <!-- division for displaying image -->
+        <div id="molecule">
+            <!--<a href="" target=blank>-->
+                <!--for getting image url-->
+                <img src="" id="molecule_img"></img>
+                <!--for getting mol_id from heatmap-->
+                <div id="mol_id"></div>
+            <!--</a>-->
+        </div>
+
+
+            
+        <!--division to show the nameing textbox on hovering-->    
+        <div id="pop-up">
+            <h3 id = "textbox_name">Name it</h3>      
+        </div>
+    
+
+
+
+
+
+        <!--creating divisions for  -->
+        <div>
+        
+        <!--making divsons for displaying images-->
+
+        <div id = "new_molecule_text">
+            <img src = "" id = "molecule_text"></img>
+            <div id = "mol_text"></div>
+        </div>
+
+        <div id = "new_molecule1">
+            <img src = "" id = "molecule1_img"></img>
+            
+        </div>
+        
+        <div id = "new_molecule2">
+            <img src = "" id = "molecule2_img"></img>
+        
+        </div>
+
+        <div id = "new_molecule3">
+            <img src = "" id = "molecule3_img"></img>
+            
+        </div>
+
+        <div id = "new_molecule4">
+            <img src = "" id = "molecule4_img"></img>
+           
+        </div>
+        
+        <div id = "new_molecule5">
+            <img src = "" id = "molecule5_img"></img>
+            
+        </div>
+
+        <div id = "new_molecule6">
+            <img src = "" id = "molecule6_img"></img>
+            
+        </div>
+
+        <div id = "new_molecule7">
+            <img src = "" id = "molecule7_img"></img>
+           
+        </div>
+
+        <div id = "new_molecule8">
+            <img src = "" id = "molecule8_img"></img>
+            
+        </div>
+
+        </div>
+        <div id = "new_molecule9">
+            <img src = "" id = "molecule9_img"></img>
+            <div id = "mol_id9"></div>
+        </div>
+
+        <div id = "new_molecule10">
+            <img src = "" id = "molecule10_img"></img>
+            <div id = "mol_id10"></div>
+        </div>
+
+        
+
+
+        <div id = "description">
+            <div id = "mol_id_2"></div>
+        </div>
+
+
+
+        <div id="dendrogram"></div>
+
+
+        <div id="footer"></div>
+    </body>
+</html>
+

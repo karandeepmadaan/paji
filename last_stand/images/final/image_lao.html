@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+
+<link rel="stylesheet" href="css_files/pure-min.css" type="text/css"/>
+<link rel="stylesheet" href="css_files/inchlib.css" type="text/css"/>
+<link rel="stylesheet" href="css_files/highlight.css" type="text/css"/>
+
+<script src="jquery-2.0.3.min.js"></script> <script src="kinetic-v5.1.0.min.js"></script> <script src="inchlib-1.1.0.js"> </script>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  //ga('create', 'UA-47862853-1', 'openscreen.cz');
+  //ga('send', 'pageview');
+
+  var dendrogram = null;
+
+
+
+                   /* $.ajax({
+                        alert("gaya");
+                        type: "GET",
+                        url: "idname.csv",
+                        dataType: "text",
+                        
+                        success: function(data) {
+                            alert(data);
+                        },
+                        
+                        //alert(data)
+                        //dendrogram.events.row_onclick = function(data, evt)
+                        error: function(xhr, ajaxOptions, thrownError) {
+                            alert("Status: " + xhr.status + "     Error: " + thrownError);
+
+                        }
+                    });*/
+
+
+
+
+/*
+    $("#contact_form").keydown(function(event){
+      if(event.keyCode == 13) {
+        event.preventDefault();
+        return false;
+      }
+    });
+*/
+    $(document).click(function(e) {
+      if(e.target.localName != "canvas" && $("#dendrogram_filter_features").is(":visible")){
+        hide_menu();
+      }
+    });
+
+/*
+    $(document).click(function(evt){
+          if(evt.target.localName != "canvas" && evt.target.localName != "a" && !($(evt.target).hasClass('pure-button')) && evt.target.localName != "button" && !($(evt.target).hasClass('target_overlay')) && !($(evt.target).hasClass('scaffold_img'))){
+            if(dendrogram !== null){
+              dendrogram.unhighlight_cluster();
+              dendrogram.unhighlight_column_cluster();
+              dendrogram.highlight_rows([]);
+            }
+          }
+      });
+*/
+
+    function hide_menu(){
+      $("#dendrogram_filter_features").fadeOut("slow");
+      $("#dendrogram_overlay").fadeOut("slow");
+    }
+
+  });
+
+
+ /*$(function () {
+    $("#upload").bind("click", function () {
+        var regex = /^([a-zA-Z0-9\s_\\.\-:])+(.csv|.txt)$/;
+        if (regex.test($("#fileUpload").val().toLowerCase())) {
+            if (typeof (FileReader) != "undefined") {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var table = $("<table />");
+                    var rows = e.target.result.split("\n");
+                    for (var i = 0; i < rows.length; i++) {
+                        var row = $("<tr />");
+                        var cells = rows[i].split(",");
+                        for (var j = 0; j < cells.length; j++) {
+                            var cell = $("<td />");
+                            cell.html(cells[j]);
+                            row.append(cell);
+                        }
+                        table.append(row);
+                    }
+                    //$("#dvCSV").html('');
+                    //$("#dvCSV").append(table);
+                }
+                reader.readAsText($("#fileUpload")[0].files[0]);
+            } else {
+                alert("This browser does not support HTML5.");
+            }
+        } else {
+            alert("Please upload a valid CSV file.");
+        }
+    });
+*/
+
+</script>
+
+<title>InCHlib - Interactive Cluster Heatmap library</title>
+</head>
+<body>
+<div id = "textbox_mine">this is area to display data</div>
+
+<img src="walmart_logo_1.jpg" alt="walmart_labs" style="padding-left:13cm; width:200px;height:50px;"> 
+<div id="content">
+<!--<input type="button" id="upload" value="Upload" />-->
+<!--<hr />
+<div id="dvCSV">
+</div>-->
+
+
+<script>
+
+// a map taken for hashing 
+var map = new Object();
+
+$(document).ready(function() {
+    //alert("in");
+    $.ajax({
+        type: "GET",
+        url: "idname.csv",
+        dataType: "text",
+        success: function(data) {processData(data);}
+     });
+
+});
+
+function processData(allText) {
+    //alert("here");
+    //alert(allText);
+    var record_num = 2;  // or however many elements there are in each row
+    var allTextLines = allText.split(/\r\n|\n/);
+    //alert(allTextLines);
+    var entries = allTextLines[100].split(',');
+   // alert(entries[0]);
+    //alert(entries[1]);
+    //map[entries[0]] = entries[1];
+    //alert("data "+ map[entries[0]])
+    var len = allTextLines.length;
+    var lines = [];
+    var i = 1;
+    while(i < len ) {
+        var entry = allTextLines[i].split(',');
+
+        map[entry[0]] = entry[1];
+        //alert("i "+ i +" "+ map[entry[0]]);
+        i = i + 1;
+    }
+    //alert("value " + map['1']);
+    var headings = entries.splice(0,record_num);
+    while (entries.length>0) {
+        var tarr = [];
+        for (var j=0; j<record_num; j++) {
+            tarr.push(headings[j]+":"+entries.shift());
+        }
+        lines.push(tarr);
+    }
+
+     //alert(map[90]);
+}
+//alert(map[90]);
+    $(document).ready(function(){
+        $("#menu_home").addClass('pure-menu-selected'); 
+        var current_mol; 
+        var current_scaffolds = {};
+
+        //intialising the dendrogram windows
+        window.dendrogram = new InCHlib(
+            {
+                target: "dendrogram",
+                metadata: true, 
+                dendrogram: true,
+                max_height: 900,
+                heatmap_colors: "Greens",
+                metadata_colors: "RdLrBu",
+                highlight_colors: "PuOr",
+            });
+
+        dendrogram.read_data_from_file("z_cluster_api_file6.json");
+        dendrogram.draw();
+
+        var molecule_url = "images/"; //image path
+        var scaffold_url = "/software/inchlib/static/img/era_scaffolds/";
+        ////////////////////////////////////////////////////////////////////////
+        //can be used to show names
+        var chembl_url = "images/" 
+        var target_element = $("#dendrogram");
+        var offset = target_element.offset();
+        var max_y = offset.top + 150; //this has the value of image from the top
+        var x_pos = offset.left + dendrogram.settings.width - 80;
+        var mol_element = $("#molecule").css({"left": x_pos});
+        var img_element = $("#molecule_img");
+        var mol_id_element = $("#mol_id"); // image name taken by row_id
+        var mol_link = $("#molecule a");
+        var scaffolds_element = $("#scaffolds").css({"left": x_pos+30, "top": max_y+5});
+        var floating_mol = $("#floating_mol");
+
+        bind_dendrogram_events();
+
+        function show_molecule(mol_id, evt){
+            scaffolds_element.hide();
+            var filepath = molecule_url + mol_id + ".jpg"; //path and image name acco to element id
+            var y = evt.evt.pageY-300; //image placement on z - axis
+            if(y < max_y){
+                y = max_y;
+            }
+            //alert(map[mol_id]);
+            //alert(mol_id);
+            mol_element.css({"top": y, "border-width": "1px"});
+            img_element.attr("src", filepath);
+            //alert(map[mol_id]);
+            
+            mol_id_element.text(map[mol_id]); // what to be written on molecule
+            //mol_link.attr("href", chembl_url+mol_id);
+            mol_element.show();
+        }
+
+        function show_scaffolds(scaffolds, evt){
+            var i, height = 200;
+            if(target_element.height() > 200){
+                height = target_element.height() - 240;
+            }
+
+            if(height > scaffolds.length*200){
+                height = scaffolds.length*200;
+            }
+
+            scaffolds_element.hide();
+            scaffolds_element.html("");
+            scaffolds_element.css({"height": height});
+            current_scaffolds = {};
+
+            for(i = 0; i < scaffolds.length; i++){
+                current_scaffolds[scaffolds[i][0]] = scaffolds[i][1];
+                scaffolds_element.append('<div class="scaffold" data-scaffold_id="' + scaffolds[i][0] + '"><img class="scaffold_img" src="' + scaffold_url + scaffolds[i][0] + '.png" alt=""><span class="scaffold_count">' + scaffolds[i][1].length + '</span></div>')
+            }
+            scaffolds_element.fadeIn();
+        }
+
+        function hide_molecule(ids, evt){
+            mol_element.hide();
+
+        }
+
+        function fix_molecule(){
+            floating_mol.hide();
+            dendrogram.events.row_onmouseover = function(){};
+            dendrogram.events.heatmap_onmouseout = function(){
+                floating_mol.hide();
+            };
+        }
+
+        function bind_dendrogram_events(){
+            dendrogram.events.row_onmouseover = function(ids, evt){
+                show_molecule(ids, evt);
+            };
+            dendrogram.events.heatmap_onmouseout = function(evt){
+                hide_molecule(evt);
+                floating_mol.hide();
+            };
+            dendrogram.events.row_onclick = function(ids, evt){
+                show_molecule(ids[0], evt);
+                fix_molecule(ids[0]);
+                current_mol = ids[0];
+
+                dendrogram.highlight_rows(ids);
+
+                mol_element.css({"border-width": "2px"});
+                dendrogram.unhighlight_cluster();
+            };
+
+            dendrogram.events.dendrogram_node_highlight = function(object_ids, evt){
+                var i;
+
+
+
+
+
+                $.ajax({
+                    type: 'GET',
+                    dataType: "json",
+                    url: "/software/inchlib/get_scaffolds",
+                    data:{compounds: object_ids},
+                    success: function(scaffolds){
+                        hide_molecule();
+                        show_scaffolds(scaffolds, evt);
+                        dendrogram.events.row_onmouseover = function(ids, evt){
+                            floating_mol.hide();
+                            floating_mol.css({"top": evt.evt.pageY, "left": evt.evt.pageX+30});
+                            floating_mol.find("img").attr("src", molecule_url + ids[0] + ".jpg");
+                            //alert(ids[0])
+                            floating_mol.show();
+                        };
+                    },
+                });
+                
+                for(i = 0; i<object_ids.length; i++){
+                    if(object_ids[i] == current_mol){
+                        return;
+                    }
+                }
+                dendrogram.highlight_rows([]);
+            }
+
+            dendrogram.events.dendrogram_node_unhighlight = function(){
+                scaffolds_element.hide();
+            }
+
+            dendrogram.events.empty_space_onclick = function(){
+                hide_molecule();
+                dendrogram.highlight_rows([]);
+                bind_dendrogram_events();
+            }
+        }
+
+        $(document).click(function(evt){            
+            if(evt.target.localName != "img" && evt.target.localName != "canvas" && evt.target.localName != "a"){
+                hide_molecule();
+                bind_dendrogram_events();
+            }
+        });
+
+        $("#scaffolds").on("click", ".scaffold", function(){
+            $(".active_scaffold").removeClass('active_scaffold');
+            var scaffold_id = $(this).attr("data-scaffold_id");
+            $(this).addClass('active_scaffold');
+            dendrogram.highlight_rows(current_scaffolds[scaffold_id]);
+        });
+
+        $("#floating_mol").on("mouseover", "img", function(){
+            $("#floating_mol").hide();
+        });
+
+    });
+</script>
+
+
+
+    <div id="molecule">
+    <a href="" target=blank>
+        <img src="" id="molecule_img"></img>
+        <div id="mol_id"></div>
+    </a>
+</div>
+
+<div id="floating_mol">
+    <img id="floating_img" src=""/>
+</div>
+
+<div id="scaffolds">
+</div>
+
+<div id="dendrogram"></div>
+
+</div>
+<div id="footer"></div>
+</body>
+</html>
+
